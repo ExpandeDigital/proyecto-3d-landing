@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packaging 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #222; }
+        canvas { display: block; }
+        .info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-family: sans-serif;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">Haz clic y arrastra para rotar la caja.</div>
+    <script>
+        window.onload = function() {
+            // Set up scene, camera, and renderer
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialiasing: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Box dimensions
+            const width = 15;
+            const height = 30;
+            const depth = 15;
+
+            // Box colors
+            const yellow = new THREE.Color(0xFFCC00); // Intense yellow
+            const blue = new THREE.Color(0x00008B); // Royal blue
+
+            // Create textures for each face with colors and borders
+            const createFaceTexture = (face) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const context = canvas.getContext('2d');
+                
+                context.fillStyle = yellow.getStyle();
+                context.fillRect(0, 0, 512, 512);
+
+                context.fillStyle = blue.getStyle();
+                // Top border
+                context.fillRect(0, 0, 512, 50); 
+                // Bottom border
+                context.fillRect(0, 512 - 50, 512, 50);
+
+                return new THREE.CanvasTexture(canvas);
+            };
+
+            const materials = [
+                new THREE.MeshBasicMaterial({ map: createFaceTexture('right') }), // Right side
+                new THREE.MeshBasicMaterial({ map: createFaceTexture('left') }),  // Left side
+                new THREE.MeshBasicMaterial({ map: createFaceTexture('top') }),   // Top face
+                new THREE.MeshBasicMaterial({ map: createFaceTexture('bottom') }),// Bottom face
+                new THREE.MeshBasicMaterial({ map: createFaceTexture('front') }), // Front face
+                new THREE.MeshBasicMaterial({ map: createFaceTexture('back') })   // Back face
+            ];
+
+            const geometry = new THREE.BoxGeometry(width, height, depth);
+            const box = new THREE.Mesh(geometry, materials);
+            scene.add(box);
+
+            // Add ambient light
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            // Set camera position
+            camera.position.z = 40;
+
+            // Mouse interaction variables
+            let isDragging = false;
+            let previousMousePosition = {
+                x: 0,
+                y: 0
+            };
+
+            // Event listeners for mouse interaction
+            document.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition.x = e.clientX;
+                previousMousePosition.y = e.clientY;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                box.rotation.y += deltaX * 0.01;
+                box.rotation.x += deltaY * 0.01;
+                previousMousePosition.x = e.clientX;
+                previousMousePosition.y = e.clientY;
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            // Handle touch events
+            document.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                const touch = e.touches[0];
+                previousMousePosition.x = touch.clientX;
+                previousMousePosition.y = touch.clientY;
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - previousMousePosition.x;
+                const deltaY = touch.clientY - previousMousePosition.y;
+                box.rotation.y += deltaX * 0.01;
+                box.rotation.x += deltaY * 0.01;
+                previousMousePosition.x = touch.clientX;
+                previousMousePosition.y = touch.clientY;
+            });
+
+            document.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+
+            // Animation loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            // Handle window resizing
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+    </script>
+</body>
+</html>
